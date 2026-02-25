@@ -1,0 +1,37 @@
+{
+	"name": "test123",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"start": "NODE_ENV=local nodemon app",
+		"m:rebuild:local": "npx sequelize-cli db:drop --env local && npx sequelize-cli db:create --charset utf8mb4 --collate utf8mb4_unicode_ci --env local && npx sequelize-cli db:migrate --env local && npx sequelize-cli db:seed:all --env local",
+		"m:rebuild:dev": "npx sequelize-cli db:drop --env development && npx sequelize-cli db:create --charset utf8mb4 --collate utf8mb4_unicode_ci --env development && npx sequelize-cli db:migrate --env development && npx sequelize-cli db:seed:all --env development",
+		"m:local": "sudo nodemon --exec 'sls offline --httpPort 80 --stage local'",
+		"m:deploy:dev": "AWS_PROFILE=XXXXXX serverless deploy --stage development",
+		"m:deploy:prod": "AWS_PROFILE=XXXXXX serverless deploy --stage production"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"aws-sdk": "^2.1692.0",
+		"axios": "^1.7.9",
+		"cors": "^2.8.5",
+		"express": "^4.21.2",
+		"joi": "^17.13.3",
+		"jsonwebtoken": "^9.0.2",
+		"moment-timezone": "^0.5.47",
+		"mysql2": "^3.12.0",
+		"nanoid": "^3.3.8",
+		"sequelize": "^6.37.5",
+		"serverless-http": "^3.2.0",
+		"uuid": "^11.0.5"
+	},
+	"devDependencies": {
+		"sequelize-cli": "^6.6.3",
+		"serverless-dotenv-plugin": "^6.0.0",
+		"serverless-offline": "^13.3.3",
+		"serverless-offline-scheduler": "^0.5.0"
+	}
+}
