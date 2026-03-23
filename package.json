@@ -7,7 +7,7 @@
 		"m:rebuild:local": "npx sequelize-cli db:drop --env local && npx sequelize-cli db:create --charset utf8mb4 --collate utf8mb4_unicode_ci --env local && npx sequelize-cli db:migrate --env local && npx sequelize-cli db:seed:all --env local",
 		"m:rebuild:dev": "npx sequelize-cli db:drop --env development && npx sequelize-cli db:create --charset utf8mb4 --collate utf8mb4_unicode_ci --env development && npx sequelize-cli db:migrate --env development && npx sequelize-cli db:seed:all --env development",
 		"m:local": "sudo nodemon --exec 'sls offline --httpPort 80 --stage local'",
-		"m:deploy:dev": "AWS_PROFILE=XXXXXX serverless deploy --stage development",
+		"m:deploy:dev": "AWS_PROFILE=yuyun serverless deploy --stage development",
 		"m:deploy:prod": "AWS_PROFILE=XXXXXX serverless deploy --stage production"
 	},
 	"keywords": [],
