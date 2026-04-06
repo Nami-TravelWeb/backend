@@ -53,12 +53,12 @@ app.use(
 						"https://www.sugarbee.vip",
 						"https://www.sugarbee.life",
 						"https://sugarbee.life",
-				  ] // 生產環境只允許特定網域
+					] // 生產環境只允許特定網域
 				: "*", // 開發環境允許本地端
 		methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // 明確指定允許的 HTTP 方法
 		allowedHeaders: ["Content-Type", "Authorization"], // 允許的 request headers
 		exposedHeaders: ["Content-Range", "X-Content-Range"], // 允許瀏覽器存取的 response headers
-	})
+	}),
 );
 
 app.use(routers);
