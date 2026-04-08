@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const { Admins, Posts, Locations } = require("../models");
+const { Admins, Posts, Locations, Hashtags } = require("../models");
 const jwt = require("jsonwebtoken");
 
 exports.adminLogin = async (req, res, next) => {
@@ -49,13 +49,6 @@ exports.adminLogin = async (req, res, next) => {
 };
 
 exports.createPost = async (req, res, next) => {
-	//title
-	//locationId
-	//city
-	//content
-	//spots//要跳轉的點
-	//isPublished
-	//mainImageUrl
 	const schema = Joi.object({
 		title: Joi.string().required().messages({
 			"string.base": "標題必須是字串",
@@ -137,11 +130,72 @@ exports.getlocations = async (req, res, next) => {};
 
 exports.createLocation = async (req, res, next) => {};
 
-exports.getHashTags = async (req, res, next) => {};
+exports.getHashTags = async (req, res, next) => {
+	try {
+		const hashtags = await Hashtags.findAll({
+			attributes: ["id", "name"],
+		});
+		return res.status(200).json({ message: "success", hashtags });
+	} catch (err) {
+		next(err);
+	}
+};
 
-exports.createHashTag = async (req, res, next) => {};
+exports.createHashTag = async (req, res, next) => {
+	const schema = Joi.object({
+		name: Joi.string().required().messages({
+			"string.base": "hashtag必須是字串",
+			"string.empty": "hashtag不能為空",
+			"any.required": "hashtag是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { name } = value;
 
-exports.deleteHashTag = async (req, res, next) => {};
+	try {
+		const hashtag = await Hashtags.findOne({ where: { name } });
+		if (hashtag) {
+			return res.status(400).json({ message: "標籤已存在" });
+		}
+		await Hashtags.create({ name });
+		return res.status(200).json({ message: "success" });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.deleteHashTag = async (req, res, next) => {
+	const schema = Joi.object({
+		hashtagId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { hashtagId } = value;
+
+	try {
+		const hashtag = await Hashtags.findOne({ where: { id: hashtagId } });
+		if (!hashtag) {
+			return res.status(404).json({ message: "標籤不存在" });
+		}
+		await Hashtags.destroy({ where: { id: hashtagId } });
+		return res.status(200).json({ message: "已刪除標籤" });
+	} catch (err) {
+		next(err);
+	}
+};
 
 exports.getPosts = async (req, res, next) => {
 	try {

@@ -4,6 +4,9 @@ const {
 	adminLogin,
 	getPosts,
 	createPost,
+	getHashTags,
+	createHashTag,
+	deleteHashTag,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
@@ -13,4 +16,7 @@ router.use(authenticate);
 router.get("/posts", getPosts);
 router.post("/posts", createPost);
 
+router.get("/hashtag", getHashTags);
+router.post("/hashtag", createHashTag);
+router.delete("/hashtag", deleteHashTag);
 module.exports = router;
