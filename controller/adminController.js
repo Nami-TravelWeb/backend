@@ -1,5 +1,5 @@
 const Joi = require("joi");
-const { Admins, Posts } = require("../models");
+const { Admins, Posts, Locations } = require("../models");
 const jwt = require("jsonwebtoken");
 
 exports.adminLogin = async (req, res, next) => {
@@ -47,6 +47,101 @@ exports.adminLogin = async (req, res, next) => {
 		next(err);
 	}
 };
+
+exports.createPost = async (req, res, next) => {
+	//title
+	//locationId
+	//city
+	//content
+	//spots//要跳轉的點
+	//isPublished
+	//mainImageUrl
+	const schema = Joi.object({
+		title: Joi.string().required().messages({
+			"string.base": "標題必須是字串",
+			"string.empty": "標題不能為空",
+			"any.required": "標題是必填欄位",
+		}),
+		locationId: Joi.number().integer().required().messages({
+			"number.base": "地點ID必須是數字",
+			"number.empty": "地點ID不能為空",
+			"any.required": "地點ID是必填欄位",
+		}),
+		city: Joi.string().required().messages({
+			"string.base": "城市必須是字串",
+			"string.empty": "城市不能為空",
+			"any.required": "城市是必填欄位",
+		}),
+		content: Joi.string().required().messages({
+			"string.base": "內容必須是字串",
+			"string.empty": "內容不能為空",
+			"any.required": "內容是必填欄位",
+		}),
+		spots: Joi.object().required().messages({
+			"object.base": "要跳轉的點必須是物件",
+			"object.empty": "要跳轉的點不能為空",
+			"any.required": "要跳轉的點是必填欄位",
+		}),
+		isPublished: Joi.boolean().required().messages({
+			"boolean.base": "是否發布必須是布林值",
+			"boolean.empty": "是否發布不能為空",
+			"any.required": "是否發布是必填欄位",
+		}),
+		mainImageUrl: Joi.string().required().messages({
+			"string.base": "主圖片URL必須是字串",
+			"string.empty": "主圖片URL不能為空",
+			"any.required": "主圖片URL是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const {
+		title,
+		locationId,
+		city,
+		content,
+		spots,
+		isPublished,
+		mainImageUrl,
+	} = value;
+
+	try {
+		const location = await Locations.findOne({ where: { id: locationId } });
+		if (!location) {
+			return res.status(404).json({ message: "國家/地區不存在" });
+		}
+
+		const post = await Posts.create({
+			title,
+			location: locationId,
+			city,
+			content,
+			spots,
+			isPublished,
+			mainImageUrl,
+		});
+
+		return res.status(200).json({ message: "success", post });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.createPostHashtags = async (req, res, next) => {};
+
+exports.getlocations = async (req, res, next) => {};
+
+exports.createLocation = async (req, res, next) => {};
+
+exports.getHashTags = async (req, res, next) => {};
+
+exports.createHashTag = async (req, res, next) => {};
+
+exports.deleteHashTag = async (req, res, next) => {};
 
 exports.getPosts = async (req, res, next) => {
 	try {
