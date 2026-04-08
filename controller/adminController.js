@@ -126,9 +126,144 @@ exports.createPost = async (req, res, next) => {
 
 exports.createPostHashtags = async (req, res, next) => {};
 
-exports.getlocations = async (req, res, next) => {};
+exports.getLocations = async (req, res, next) => {
+	const schema = Joi.object({
+		continent: Joi.string().optional().messages({
+			"string.base": "國家/地區必須是字串",
+			"string.empty": "國家/地區不能為空",
+			"any.required": "國家/地區是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.query);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { continent } = value;
 
-exports.createLocation = async (req, res, next) => {};
+	try {
+		const whereClause = {};
+		if (continent) {
+			whereClause.continent = continent;
+		}
+		const locations = await Locations.findAll({
+			attributes: ["id", "continent", "region", "country"],
+			where: whereClause,
+		});
+		return res.status(200).json({ message: "success", locations });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.createLocation = async (req, res, next) => {
+	const schema = Joi.object({
+		continent: Joi.string().required().messages({
+			"string.base": "國家/地區必須是字串",
+			"string.empty": "國家/地區不能為空",
+			"any.required": "國家/地區是必填欄位",
+		}),
+		region: Joi.string().required().messages({
+			"string.base": "地區必須是字串",
+			"string.empty": "地區不能為空",
+			"any.required": "地區是必填欄位",
+		}),
+		country: Joi.string().required().messages({
+			"string.base": "國家必須是字串",
+			"string.empty": "國家不能為空",
+			"any.required": "國家是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { continent, region, country } = value;
+	try {
+		const location = await Locations.findOne({
+			where: { country },
+		});
+		if (location) {
+			return res.status(400).json({ message: "國家已存在" });
+		}
+		await Locations.create({ continent, region, country });
+		return res.status(200).json({ message: "success" });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.updateLocation = async (req, res, next) => {
+	const schema = Joi.object({
+		locationId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+		continent: Joi.string().optional().messages({
+			"string.base": "國家/地區必須是字串",
+			"string.empty": "國家/地區不能為空",
+			"any.required": "國家/地區是必填欄位",
+		}),
+		region: Joi.string().optional().messages({
+			"string.base": "地區必須是字串",
+			"string.empty": "地區不能為空",
+			"any.required": "地區是必填欄位",
+		}),
+		country: Joi.string().optional().messages({
+			"string.base": "國家必須是字串",
+			"string.empty": "國家不能為空",
+			"any.required": "國家是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { locationId, continent, region, country } = value;
+	try {
+		const location = await Locations.findOne({ where: { id: locationId } });
+		if (!location) {
+			return res.status(404).json({ message: "國家不存在" });
+		}
+		await location.update({ continent, region, country });
+		return res.status(200).json({ message: "success" });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.deleteLocation = async (req, res, next) => {
+	const schema = Joi.object({
+		locationId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { locationId } = value;
+	try {
+		const location = await Locations.findOne({ where: { id: locationId } });
+		if (!location) {
+			return res.status(404).json({ message: "國家/地區不存在" });
+		}
+		await location.destroy();
+		return res.status(200).json({ message: "success" });
+	} catch (err) {
+		next(err);
+	}
+};
 
 exports.getHashTags = async (req, res, next) => {
 	try {
