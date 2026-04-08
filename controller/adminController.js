@@ -1,5 +1,12 @@
 const Joi = require("joi");
-const { Admins, Posts, Locations, Hashtags } = require("../models");
+const {
+	Admins,
+	Posts,
+	Locations,
+	Hashtags,
+	PostHashtags,
+	sequelize,
+} = require("../models");
 const jwt = require("jsonwebtoken");
 
 exports.adminLogin = async (req, res, next) => {
@@ -124,7 +131,68 @@ exports.createPost = async (req, res, next) => {
 	}
 };
 
-exports.createPostHashtags = async (req, res, next) => {};
+exports.createPostHashtags = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+		hashtagArray: Joi.array()
+			.items(Joi.number().integer())
+			.required()
+			.messages({
+				"array.base": "標籤陣列必須是陣列",
+				"array.empty": "標籤陣列不能為空",
+				"any.required": "標籤陣列是必填欄位",
+			}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId, hashtagArray } = value;
+	const transaction = await sequelize.transaction();
+	try {
+		const post = await Posts.findOne({
+			where: { id: postId },
+			transaction,
+		});
+		if (!post) {
+			await transaction.rollback();
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		for (const hashtagId of hashtagArray) {
+			const hashtag = await Hashtags.findOne({
+				where: { id: hashtagId },
+				transaction,
+			});
+			if (!hashtag) {
+				await transaction.rollback();
+				return res
+					.status(404)
+					.json({ message: `標籤${hashtagId}不存在` });
+			}
+		}
+
+		const postHashtagBulk = hashtagArray.map((hashtagId) => ({
+			postId,
+			hashtagId,
+		}));
+		// console.log(postHashtagBulk);
+		await PostHashtags.destroy({ where: { postId }, transaction }); // 先刪除原有的標籤
+		await PostHashtags.bulkCreate(postHashtagBulk, { transaction });
+
+		await transaction.commit();
+		return res.status(200).json({ message: "success" });
+	} catch (err) {
+		console.log(err);
+		await transaction.rollback();
+		next(err);
+	}
+};
 
 exports.getLocations = async (req, res, next) => {
 	const schema = Joi.object({
@@ -319,15 +387,23 @@ exports.deleteHashTag = async (req, res, next) => {
 			.json({ message: "資料格式錯誤", error: error.details[0].message });
 	}
 	const { hashtagId } = value;
+	const transaction = await sequelize.transaction();
 
 	try {
-		const hashtag = await Hashtags.findOne({ where: { id: hashtagId } });
+		const hashtag = await Hashtags.findOne({
+			where: { id: hashtagId },
+			transaction,
+		});
 		if (!hashtag) {
+			await transaction.rollback();
 			return res.status(404).json({ message: "標籤不存在" });
 		}
-		await Hashtags.destroy({ where: { id: hashtagId } });
+		await PostHashtags.destroy({ where: { hashtagId }, transaction });
+		await Hashtags.destroy({ where: { id: hashtagId }, transaction });
+		await transaction.commit();
 		return res.status(200).json({ message: "已刪除標籤" });
 	} catch (err) {
+		await transaction.rollback();
 		next(err);
 	}
 };

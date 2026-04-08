@@ -13,6 +13,12 @@ module.exports = (sequelize, DataTypes) => {
 	}
 	PostHashtags.init(
 		{
+			id: {
+				allowNull: false,
+				autoIncrement: true,
+				primaryKey: true,
+				type: DataTypes.INTEGER,
+			},
 			postId: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
