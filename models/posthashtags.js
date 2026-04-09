@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
 		 */
 		static associate(models) {
 			// define association here
+			PostHashtags.belongsTo(models.Hashtags, {
+				foreignKey: "hashtagId",
+				as: "hashtag",
+			});
 		}
 	}
 	PostHashtags.init(

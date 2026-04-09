@@ -12,13 +12,16 @@ const {
 	updateLocation,
 	deleteLocation,
 	createPostHashtags,
+	getPostById,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
 router.post("/login", adminLogin);
 
 router.use(authenticate);
+
 router.get("/post", getPosts);
+router.get("/post/:postId", getPostById);
 router.post("/post", createPost);
 router.post("/post/hashtag", createPostHashtags);
 

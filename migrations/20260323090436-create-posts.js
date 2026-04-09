@@ -40,6 +40,11 @@ module.exports = {
 					allowNull: false,
 					defaultValue: false,
 				},
+				viewCount: {
+					type: Sequelize.INTEGER,
+					allowNull: false,
+					defaultValue: 0,
+				},
 				deletedAt: {
 					type: Sequelize.DATE,
 					allowNull: true,

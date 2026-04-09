@@ -8,6 +8,8 @@ const {
 	sequelize,
 } = require("../models");
 const jwt = require("jsonwebtoken");
+const { Op } = require("sequelize");
+const moment = require("moment-timezone");
 
 exports.adminLogin = async (req, res, next) => {
 	const schema = Joi.object({
@@ -124,6 +126,242 @@ exports.createPost = async (req, res, next) => {
 			isPublished,
 			mainImageUrl,
 		});
+
+		return res.status(200).json({ message: "success", post });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.getPosts = async (req, res, next) => {
+	const schema = Joi.object({
+		page: Joi.number().integer().default(1).messages({
+			"number.base": "頁碼必須是數字",
+			"number.empty": "頁碼不能為空",
+			"any.required": "頁碼是必填欄位",
+		}),
+		limit: Joi.number().integer().default(50).messages({
+			"number.base": "每頁筆數必須是數字",
+			"number.empty": "每頁筆數不能為空",
+			"any.required": "每頁筆數是必填欄位",
+		}),
+		isPublished: Joi.boolean().optional().messages({
+			"boolean.base": "是否發布必須是布林值",
+			"boolean.empty": "是否發布不能為空",
+			"any.required": "是否發布是必填欄位",
+		}),
+		isDeleted: Joi.boolean().optional().messages({
+			"boolean.base": "是否已刪除必須是布林值",
+			"boolean.empty": "是否已刪除不能為空",
+			"any.required": "是否已刪除是必填欄位",
+		}),
+		startDate: Joi.date().optional().messages({
+			"date.base": "最大日期必須是日期",
+			"date.empty": "最大日期不能為空",
+			"any.required": "最大日期是必填欄位",
+		}),
+		endDate: Joi.date().optional().messages({
+			"date.base": "最小日期必須是日期",
+			"date.empty": "最小日期不能為空",
+			"any.required": "最小日期是必填欄位",
+		}),
+		conutry: Joi.string().optional().messages({
+			"string.base": "國家必須是字串",
+			"string.empty": "國家不能為空",
+			"any.required": "國家是必填欄位",
+		}),
+		city: Joi.string().optional().messages({
+			"string.base": "城市必須是字串",
+			"string.empty": "城市不能為空",
+			"any.required": "城市是必填欄位",
+		}),
+		keyword: Joi.string().optional().messages({
+			"string.base": "關鍵字必須是字串",
+			"string.empty": "關鍵字不能為空",
+			"any.required": "關鍵字是必填欄位",
+		}),
+		order: Joi.number().integer().optional().messages({
+			"number.base": "排序必須是數字",
+			"number.empty": "排序不能為空",
+			"any.required": "排序是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.query);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const {
+		page,
+		limit,
+		isPublished,
+		isDeleted,
+		startDate,
+		endDate,
+		conutry,
+		city,
+		keyword,
+		order,
+	} = value;
+	const offset = (page - 1) * limit;
+	try {
+		const whereClause = {};
+
+		if (isPublished === true) {
+			whereClause.isPublished = true;
+			whereClause.deletedAt = null;
+		} else if (isPublished === false) {
+			whereClause.isPublished = false;
+			whereClause.deletedAt = null;
+		}
+		if (isDeleted) {
+			whereClause.deletedAt = { [Op.ne]: null };
+		}
+		if (startDate || endDate) {
+			whereClause.createdAt = {};
+			if (startDate) {
+				whereClause.createdAt[Op.gte] = startDate;
+			}
+			if (endDate) {
+				whereClause.createdAt[Op.lte] = moment(endDate)
+					.endOf("day")
+					.toDate();
+			}
+		}
+		if (city) {
+			whereClause.city = city;
+		}
+		if (keyword) {
+			whereClause[Op.or] = [
+				{ title: { [Op.like]: `%${keyword}%` } },
+
+				{ city: { [Op.like]: `%${keyword}%` } },
+				{
+					id: {
+						[Op.in]: sequelize.literal(`(
+							SELECT p.id FROM Posts AS p
+							INNER JOIN Locations AS l ON p.location = l.id
+							WHERE l.country LIKE '%${keyword}%'
+						)`),
+					},
+				},
+				{
+					id: {
+						[Op.in]: sequelize.literal(`(
+						SELECT ph.postId FROM PostHashtags AS ph
+						INNER JOIN Hashtags AS h ON ph.hashtagId = h.id
+						WHERE h.name LIKE '%${keyword}%'
+						)`),
+					},
+				},
+			];
+		}
+
+		const orderArray = [];
+
+		if (order === 1) {
+			orderArray.push(["createdAt", "DESC"]);
+		} else if (order === 2) {
+			orderArray.push(["createdAt", "ASC"]);
+		} else if (order === 3) {
+			orderArray.push(["viewCount", "DESC"]);
+		} else if (order === 4) {
+			orderArray.push(["updatedAt", "DESC"]);
+		} else {
+			orderArray.push(["createdAt", "DESC"]);
+		}
+
+		const { count, rows: posts } = await Posts.findAndCountAll({
+			where: whereClause,
+			include: [
+				{
+					model: Locations,
+					as: "locationInfo",
+					attributes: ["id", "continent", "region", "country"],
+					where: conutry ? { country: conutry } : null,
+				},
+				{
+					model: PostHashtags,
+					as: "postHashtags",
+					attributes: ["id", "postId", "hashtagId"],
+					include: [
+						{
+							model: Hashtags,
+							as: "hashtag",
+							attributes: ["name"],
+						},
+					],
+				},
+			],
+			offset,
+			limit,
+			order: orderArray,
+			distinct: true,
+			paranoid: false,
+		});
+
+		for (const post of posts) {
+			delete post.dataValues.location;
+		}
+		return res.status(200).json({
+			message: "success",
+			posts,
+			pagenation: {
+				total: count,
+				page,
+				limit,
+				totalPages: Math.ceil(count / limit),
+			},
+		});
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.getPostById = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.params);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({
+			include: [
+				{
+					model: Locations,
+					as: "locationInfo",
+					attributes: ["id", "continent", "region", "country"],
+				},
+				{
+					model: PostHashtags,
+					as: "postHashtags",
+					attributes: ["id", "postId", "hashtagId"],
+					include: [
+						{
+							model: Hashtags,
+							as: "hashtag",
+							attributes: ["name"],
+						},
+					],
+				},
+			],
+			where: { id: postId },
+		});
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+
+		delete post.dataValues.location;
 
 		return res.status(200).json({ message: "success", post });
 	} catch (err) {
@@ -404,15 +642,6 @@ exports.deleteHashTag = async (req, res, next) => {
 		return res.status(200).json({ message: "已刪除標籤" });
 	} catch (err) {
 		await transaction.rollback();
-		next(err);
-	}
-};
-
-exports.getPosts = async (req, res, next) => {
-	try {
-		const posts = await Posts.findAll();
-		return res.status(200).json({ message: "success", posts });
-	} catch (err) {
 		next(err);
 	}
 };

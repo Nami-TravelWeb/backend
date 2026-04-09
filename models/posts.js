@@ -9,6 +9,14 @@ module.exports = (sequelize, DataTypes) => {
 		 */
 		static associate(models) {
 			// define association here
+			Posts.belongsTo(models.Locations, {
+				foreignKey: "location",
+				as: "locationInfo",
+			});
+			Posts.hasMany(models.PostHashtags, {
+				foreignKey: "postId",
+				as: "postHashtags",
+			});
 		}
 	}
 	Posts.init(
@@ -47,6 +55,11 @@ module.exports = (sequelize, DataTypes) => {
 				type: DataTypes.BOOLEAN,
 				allowNull: false,
 				defaultValue: false,
+			},
+			viewCount: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				defaultValue: 0,
 			},
 			deletedAt: {
 				type: DataTypes.DATE,
