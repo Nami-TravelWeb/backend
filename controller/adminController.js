@@ -603,8 +603,10 @@ exports.createHashTag = async (req, res, next) => {
 		if (hashtag) {
 			return res.status(400).json({ message: "標籤已存在" });
 		}
-		await Hashtags.create({ name });
-		return res.status(200).json({ message: "success" });
+		const newHashtag = await Hashtags.create({ name });
+		return res
+			.status(200)
+			.json({ message: "success", hashtag: newHashtag });
 	} catch (err) {
 		next(err);
 	}
