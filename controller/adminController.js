@@ -175,10 +175,10 @@ exports.getPosts = async (req, res, next) => {
 			"string.empty": "城市不能為空",
 			"any.required": "城市是必填欄位",
 		}),
-		keyword: Joi.string().optional().messages({
-			"string.base": "關鍵字必須是字串",
-			"string.empty": "關鍵字不能為空",
-			"any.required": "關鍵字是必填欄位",
+		search: Joi.string().optional().messages({
+			"string.base": "搜尋必須是字串",
+			"string.empty": "搜尋不能為空",
+			"any.required": "搜尋是必填欄位",
 		}),
 		order: Joi.number().integer().optional().messages({
 			"number.base": "排序必須是數字",
@@ -201,7 +201,7 @@ exports.getPosts = async (req, res, next) => {
 		endDate,
 		conutry,
 		city,
-		keyword,
+		search,
 		order,
 	} = value;
 	const offset = (page - 1) * limit;
@@ -232,17 +232,17 @@ exports.getPosts = async (req, res, next) => {
 		if (city) {
 			whereClause.city = city;
 		}
-		if (keyword) {
+		if (search) {
 			whereClause[Op.or] = [
-				{ title: { [Op.like]: `%${keyword}%` } },
+				{ title: { [Op.like]: `%${search}%` } },
 
-				{ city: { [Op.like]: `%${keyword}%` } },
+				{ city: { [Op.like]: `%${search}%` } },
 				{
 					id: {
 						[Op.in]: sequelize.literal(`(
 							SELECT p.id FROM Posts AS p
 							INNER JOIN Locations AS l ON p.location = l.id
-							WHERE l.country LIKE '%${keyword}%'
+							WHERE l.country LIKE '%${search}%'
 						)`),
 					},
 				},
@@ -251,7 +251,7 @@ exports.getPosts = async (req, res, next) => {
 						[Op.in]: sequelize.literal(`(
 						SELECT ph.postId FROM PostHashtags AS ph
 						INNER JOIN Hashtags AS h ON ph.hashtagId = h.id
-						WHERE h.name LIKE '%${keyword}%'
+						WHERE h.name LIKE '%${search}%'
 						)`),
 					},
 				},
