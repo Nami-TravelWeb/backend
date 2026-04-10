@@ -439,6 +439,11 @@ exports.getLocations = async (req, res, next) => {
 			"string.empty": "國家/地區不能為空",
 			"any.required": "國家/地區是必填欄位",
 		}),
+		id: Joi.number().integer().optional().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
 	});
 	const { error, value } = schema.validate(req.query);
 	if (error) {
@@ -446,12 +451,15 @@ exports.getLocations = async (req, res, next) => {
 			.status(400)
 			.json({ message: "資料格式錯誤", error: error.details[0].message });
 	}
-	const { continent } = value;
+	const { continent, id } = value;
 
 	try {
 		const whereClause = {};
 		if (continent) {
 			whereClause.continent = continent;
+		}
+		if (id) {
+			whereClause.id = id;
 		}
 		const locations = await Locations.findAll({
 			attributes: ["id", "continent", "region", "country"],
@@ -495,8 +503,14 @@ exports.createLocation = async (req, res, next) => {
 		if (location) {
 			return res.status(400).json({ message: "國家已存在" });
 		}
-		await Locations.create({ continent, region, country });
-		return res.status(200).json({ message: "success" });
+		const newLocation = await Locations.create({
+			continent,
+			region,
+			country,
+		});
+		return res
+			.status(200)
+			.json({ message: "success", location: newLocation });
 	} catch (err) {
 		next(err);
 	}
