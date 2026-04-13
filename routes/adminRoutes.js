@@ -13,12 +13,15 @@ const {
 	deleteLocation,
 	createPostHashtags,
 	getPostById,
+	getPreSignedUrl,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
 router.post("/login", adminLogin);
 
 router.use(authenticate);
+
+router.post("/media/PreSignedUrl", getPreSignedUrl);
 
 router.get("/post", getPosts);
 router.get("/post/:postId", getPostById);
@@ -33,4 +36,5 @@ router.delete("/location", deleteLocation);
 router.get("/hashtag", getHashTags);
 router.post("/hashtag", createHashTag);
 router.delete("/hashtag", deleteHashTag);
+
 module.exports = router;

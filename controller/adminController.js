@@ -10,6 +10,8 @@ const {
 const jwt = require("jsonwebtoken");
 const { Op } = require("sequelize");
 const moment = require("moment-timezone");
+const { v4: uuidv4 } = require("uuid");
+const { S3 } = require("aws-sdk");
 
 exports.adminLogin = async (req, res, next) => {
 	const schema = Joi.object({
@@ -52,6 +54,52 @@ exports.adminLogin = async (req, res, next) => {
 		);
 
 		return res.status(200).json({ message: "登入成功", jwtToken });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.getPreSignedUrl = async (req, res, next) => {
+	const schema = Joi.object({
+		item: Joi.string().required().messages({
+			"string.base": "item 格式錯誤",
+			"any.required": "item 是必填欄位",
+		}),
+		id: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+		mimeType: Joi.string().required().messages({
+			"string.base": "mimeType 格式錯誤",
+			"any.required": "mimeType 是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res.status(400).json({ message: error.details[0].message });
+	}
+	const { item, id, mimeType } = value;
+
+	try {
+		const s3Params = {
+			Bucket: process.env.AWS_S3_BUCKET_NAME,
+			Key: `admin/${item}/${id}/${uuidv4()}`,
+			Expires: 3600, // URL expires in 1 hour
+			ContentType: mimeType,
+		};
+		const s3 = new S3({
+			accessKeyId: process.env.AWS_IAM_ACCESS_KEY_ID,
+			secretAccessKey: process.env.AWS_IAM_SECRET_ACCESS_KEY,
+			region: process.env.AWS_S3_REGION,
+			signatureVersion: "v4",
+		});
+
+		const preSignedUrl = await s3.getSignedUrlPromise(
+			"putObject",
+			s3Params,
+		);
+		return res.status(200).json({ preSignedUrl });
 	} catch (err) {
 		next(err);
 	}
