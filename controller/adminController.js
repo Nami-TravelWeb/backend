@@ -510,7 +510,14 @@ exports.getLocations = async (req, res, next) => {
 			whereClause.id = id;
 		}
 		const locations = await Locations.findAll({
-			attributes: ["id", "continent", "region", "country"],
+			attributes: [
+				"id",
+				"continent",
+				"region",
+				"country",
+				"countryEn",
+				"imageUrl",
+			],
 			where: whereClause,
 		});
 		return res.status(200).json({ message: "success", locations });
@@ -536,6 +543,11 @@ exports.createLocation = async (req, res, next) => {
 			"string.empty": "國家不能為空",
 			"any.required": "國家是必填欄位",
 		}),
+		countryEn: Joi.string().required().messages({
+			"string.base": "國家英文名稱必須是字串",
+			"string.empty": "國家英文名稱不能為空",
+			"any.required": "國家英文名稱是必填欄位",
+		}),
 	});
 	const { error, value } = schema.validate(req.body);
 	if (error) {
@@ -543,7 +555,7 @@ exports.createLocation = async (req, res, next) => {
 			.status(400)
 			.json({ message: "資料格式錯誤", error: error.details[0].message });
 	}
-	const { continent, region, country } = value;
+	const { continent, region, country, countryEn } = value;
 	try {
 		const location = await Locations.findOne({
 			where: { country },
@@ -555,10 +567,43 @@ exports.createLocation = async (req, res, next) => {
 			continent,
 			region,
 			country,
+			countryEn,
 		});
 		return res
 			.status(200)
 			.json({ message: "success", location: newLocation });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.updateLocationImg = async (req, res, next) => {
+	const schema = Joi.object({
+		locationId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+		imageUrl: Joi.string().required().messages({
+			"string.base": "圖片URL必須是字串",
+			"string.empty": "圖片URL不能為空",
+			"any.required": "圖片URL是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { locationId, imageUrl } = value;
+	try {
+		const location = await Locations.findOne({ where: { id: locationId } });
+		if (!location) {
+			return res.status(404).json({ message: "國家/地區不存在" });
+		}
+		await location.update({ imageUrl });
+		return res.status(200).json({ message: "success", location });
 	} catch (err) {
 		next(err);
 	}
@@ -586,6 +631,16 @@ exports.updateLocation = async (req, res, next) => {
 			"string.empty": "國家不能為空",
 			"any.required": "國家是必填欄位",
 		}),
+		countryEn: Joi.string().optional().messages({
+			"string.base": "國家英文名稱必須是字串",
+			"string.empty": "國家英文名稱不能為空",
+			"any.required": "國家英文名稱是必填欄位",
+		}),
+		imageUrl: Joi.string().optional().messages({
+			"string.base": "圖片URL必須是字串",
+			"string.empty": "圖片URL不能為空",
+			"any.required": "圖片URL是必填欄位",
+		}),
 	});
 	const { error, value } = schema.validate(req.body);
 	if (error) {
@@ -593,13 +648,20 @@ exports.updateLocation = async (req, res, next) => {
 			.status(400)
 			.json({ message: "資料格式錯誤", error: error.details[0].message });
 	}
-	const { locationId, continent, region, country } = value;
+	const { locationId, continent, region, country, countryEn, imageUrl } =
+		value;
 	try {
 		const location = await Locations.findOne({ where: { id: locationId } });
 		if (!location) {
 			return res.status(404).json({ message: "國家不存在" });
 		}
-		await location.update({ continent, region, country });
+		await location.update({
+			continent,
+			region,
+			country,
+			countryEn,
+			imageUrl,
+		});
 		return res.status(200).json({ message: "success" });
 	} catch (err) {
 		next(err);

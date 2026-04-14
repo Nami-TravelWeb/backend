@@ -14,6 +14,7 @@ const {
 	createPostHashtags,
 	getPostById,
 	getPreSignedUrl,
+	updateLocationImg,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
@@ -32,6 +33,7 @@ router.get("/location", getLocations);
 router.post("/location", createLocation);
 router.put("/location", updateLocation);
 router.delete("/location", deleteLocation);
+router.put("/location/image", updateLocationImg);
 
 router.get("/hashtag", getHashTags);
 router.post("/hashtag", createHashTag);
