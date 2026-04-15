@@ -137,10 +137,10 @@ exports.createPost = async (req, res, next) => {
 			"boolean.empty": "是否發布不能為空",
 			"any.required": "是否發布是必填欄位",
 		}),
-		mainImageUrl: Joi.string().required().messages({
-			"string.base": "主圖片URL必須是字串",
-			"string.empty": "主圖片URL不能為空",
-			"any.required": "主圖片URL是必填欄位",
+		mainImageUrl: Joi.string().optional().allow(null).messages({
+			"string.base": "主圖片URL可以為字串",
+			"string.empty": "主圖片URL可以為空",
+			"any.required": "主圖片URL可以為空",
 		}),
 	});
 	const { error, value } = schema.validate(req.body);
@@ -520,7 +520,9 @@ exports.getLocations = async (req, res, next) => {
 			],
 			where: whereClause,
 		});
-		return res.status(200).json({ message: "success", locations });
+		return res
+			.status(200)
+			.json({ message: "取得國家/地區成功", locations });
 	} catch (err) {
 		next(err);
 	}
@@ -571,7 +573,7 @@ exports.createLocation = async (req, res, next) => {
 		});
 		return res
 			.status(200)
-			.json({ message: "success", location: newLocation });
+			.json({ message: "新增國家/地區成功", location: newLocation });
 	} catch (err) {
 		next(err);
 	}
@@ -603,7 +605,9 @@ exports.updateLocationImg = async (req, res, next) => {
 			return res.status(404).json({ message: "國家/地區不存在" });
 		}
 		await location.update({ imageUrl });
-		return res.status(200).json({ message: "success", location });
+		return res
+			.status(200)
+			.json({ message: "更新國家/地區圖片成功", location });
 	} catch (err) {
 		next(err);
 	}
@@ -662,7 +666,7 @@ exports.updateLocation = async (req, res, next) => {
 			countryEn,
 			imageUrl,
 		});
-		return res.status(200).json({ message: "success" });
+		return res.status(200).json({ message: "更新國家/地區成功", location });
 	} catch (err) {
 		next(err);
 	}
