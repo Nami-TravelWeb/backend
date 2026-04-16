@@ -15,6 +15,10 @@ const {
 	getPostById,
 	getPreSignedUrl,
 	updateLocationImg,
+	updatePost,
+	updateIsPublishedStatus,
+	softDeletePost,
+	forceDeletePost,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
@@ -26,8 +30,12 @@ router.post("/media/PreSignedUrl", getPreSignedUrl);
 
 router.get("/post", getPosts);
 router.get("/post/:postId", getPostById);
+router.put("/post", updatePost);
 router.post("/post", createPost);
 router.post("/post/hashtag", createPostHashtags);
+router.put("/post/isPublishedStatus", updateIsPublishedStatus);
+router.delete("/post/soft", softDeletePost);
+router.delete("/post/force", forceDeletePost);
 
 router.get("/location", getLocations);
 router.post("/location", createLocation);

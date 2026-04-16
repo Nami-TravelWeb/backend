@@ -417,6 +417,162 @@ exports.getPostById = async (req, res, next) => {
 	}
 };
 
+exports.updatePost = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+		title: Joi.string().optional().messages({
+			"string.base": "標題必須是字串",
+			"string.empty": "標題不能為空",
+			"any.required": "標題是必填欄位",
+		}),
+		locationId: Joi.number().integer().optional().messages({
+			"number.base": "地點必須是數字",
+			"number.empty": "地點不能為空",
+			"any.required": "地點是必填欄位",
+		}),
+		city: Joi.string().optional().messages({
+			"string.base": "城市必須是字串",
+			"string.empty": "城市不能為空",
+			"any.required": "城市是必填欄位",
+		}),
+		content: Joi.string().optional().messages({
+			"string.base": "內容必須是字串",
+			"string.empty": "內容不能為空",
+			"any.required": "內容是必填欄位",
+		}),
+		spots: Joi.object().optional().messages({
+			"object.base": "要跳轉的點必須是物件",
+			"object.empty": "要跳轉的點不能為空",
+			"any.required": "要跳轉的點是必填欄位",
+		}),
+		mainImageUrl: Joi.string().optional().allow(null).messages({
+			"string.base": "主圖片URL可以為字串",
+			"string.empty": "主圖片URL可以為空",
+			"any.required": "主圖片URL可以為空",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId, title, locationId, city, content, spots, mainImageUrl } =
+		value;
+	try {
+		const post = await Posts.findOne({ where: { id: postId } });
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+
+		const location = await Locations.findOne({ where: { id: locationId } });
+		if (!location) {
+			return res.status(404).json({ message: "地點不存在" });
+		}
+
+		await post.update({
+			title,
+			location: location.id,
+			city,
+			content,
+			spots,
+			mainImageUrl,
+		});
+		return res.status(200).json({ message: "更新文章成功", post });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.updateIsPublishedStatus = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({ where: { id: postId } });
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		await post.update({
+			isPublished: post.isPublished === true ? false : true,
+		});
+		return res.status(200).json({ message: "更新發布狀態成功" });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.softDeletePost = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({ where: { id: postId } });
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		await post.destroy();
+		return res.status(200).json({ message: "刪除文章成功", post });
+	} catch (err) {
+		next(err);
+	}
+};
+
+exports.forceDeletePost = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({
+			where: { id: postId },
+			paranoid: false,
+		});
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		await post.destroy({ force: true });
+		return res.status(200).json({ message: "刪除文章成功" });
+	} catch (err) {
+		next(err);
+	}
+};
 exports.createPostHashtags = async (req, res, next) => {
 	const schema = Joi.object({
 		postId: Joi.number().integer().required().messages({
