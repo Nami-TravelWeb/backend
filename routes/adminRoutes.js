@@ -19,6 +19,7 @@ const {
 	updateIsPublishedStatus,
 	softDeletePost,
 	forceDeletePost,
+	restorePost,
 } = require("../controller/adminController");
 const { authenticate } = require("../middleware/authenticate");
 
@@ -36,6 +37,7 @@ router.post("/post/hashtag", createPostHashtags);
 router.put("/post/isPublishedStatus", updateIsPublishedStatus);
 router.delete("/post/soft", softDeletePost);
 router.delete("/post/force", forceDeletePost);
+router.put("/post/restore", restorePost);
 
 router.get("/location", getLocations);
 router.post("/location", createLocation);

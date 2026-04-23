@@ -203,17 +203,17 @@ exports.getPosts = async (req, res, next) => {
 			"boolean.empty": "是否已刪除不能為空",
 			"any.required": "是否已刪除是必填欄位",
 		}),
-		startDate: Joi.date().optional().messages({
+		startDate: Joi.date().optional().allow("").messages({
 			"date.base": "最大日期必須是日期",
 			"date.empty": "最大日期不能為空",
 			"any.required": "最大日期是必填欄位",
 		}),
-		endDate: Joi.date().optional().messages({
+		endDate: Joi.date().optional().allow("").messages({
 			"date.base": "最小日期必須是日期",
 			"date.empty": "最小日期不能為空",
 			"any.required": "最小日期是必填欄位",
 		}),
-		conutry: Joi.string().optional().messages({
+		country: Joi.string().optional().messages({
 			"string.base": "國家必須是字串",
 			"string.empty": "國家不能為空",
 			"any.required": "國家是必填欄位",
@@ -223,7 +223,7 @@ exports.getPosts = async (req, res, next) => {
 			"string.empty": "城市不能為空",
 			"any.required": "城市是必填欄位",
 		}),
-		search: Joi.string().optional().messages({
+		search: Joi.string().optional().allow("").messages({
 			"string.base": "搜尋必須是字串",
 			"string.empty": "搜尋不能為空",
 			"any.required": "搜尋是必填欄位",
@@ -247,7 +247,7 @@ exports.getPosts = async (req, res, next) => {
 		isDeleted,
 		startDate,
 		endDate,
-		conutry,
+		country,
 		city,
 		search,
 		order,
@@ -327,7 +327,7 @@ exports.getPosts = async (req, res, next) => {
 					model: Locations,
 					as: "locationInfo",
 					attributes: ["id", "continent", "region", "country"],
-					where: conutry ? { country: conutry } : null,
+					where: country ? { country: country } : null,
 				},
 				{
 					model: PostHashtags,
@@ -544,6 +544,36 @@ exports.softDeletePost = async (req, res, next) => {
 	}
 };
 
+exports.restorePost = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "id必須是數字",
+			"number.empty": "id不能為空",
+			"any.required": "id是必填欄位",
+		}),
+	});
+	const { error, value } = schema.validate(req.body);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({
+			where: { id: postId },
+			paranoid: false,
+		});
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		await post.restore();
+		return res.status(200).json({ message: "恢復文章成功" });
+	} catch (err) {
+		next(err);
+	}
+};
+
 exports.forceDeletePost = async (req, res, next) => {
 	const schema = Joi.object({
 		postId: Joi.number().integer().required().messages({
@@ -573,6 +603,7 @@ exports.forceDeletePost = async (req, res, next) => {
 		next(err);
 	}
 };
+
 exports.createPostHashtags = async (req, res, next) => {
 	const schema = Joi.object({
 		postId: Joi.number().integer().required().messages({
