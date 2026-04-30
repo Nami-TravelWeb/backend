@@ -199,3 +199,59 @@ exports.getPosts = async (req, res, next) => {
 		next(err);
 	}
 };
+
+exports.getPostsById = async (req, res, next) => {
+	const schema = Joi.object({
+		postId: Joi.number().integer().required().messages({
+			"number.base": "文章id必須是數字",
+			"number.empty": "文章id不能為空",
+		}),
+	});
+	const { error, value } = schema.validate(req.params);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { postId } = value;
+	try {
+		const post = await Posts.findOne({
+			where: { id: postId, isPublished: true },
+			include: [
+				{
+					model: Locations,
+					as: "locationInfo",
+					attributes: ["id", "continent", "region", "country"],
+				},
+				{
+					model: PostHashtags,
+					as: "postHashtags",
+					attributes: ["id", "postId", "hashtagId"],
+					include: [
+						{
+							model: Hashtags,
+							as: "hashtag",
+							attributes: ["name"],
+						},
+					],
+				},
+			],
+			attributes: [
+				"id",
+				"title",
+				"location",
+				"city",
+				"content",
+				"spots",
+				"viewCount",
+				"createdAt",
+			],
+		});
+		if (!post) {
+			return res.status(404).json({ message: "文章不存在" });
+		}
+		return res.status(200).json({ message: "success", post });
+	} catch (err) {
+		next(err);
+	}
+};
