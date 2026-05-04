@@ -19,7 +19,7 @@ module.exports = {
 			},
 			region: {
 				type: Sequelize.STRING,
-				allowNull: false,
+				allowNull: true,
 			},
 			country: {
 				type: Sequelize.STRING,

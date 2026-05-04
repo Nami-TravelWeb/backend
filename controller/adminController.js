@@ -722,10 +722,8 @@ exports.createLocation = async (req, res, next) => {
 			"string.empty": "國家/地區不能為空",
 			"any.required": "國家/地區是必填欄位",
 		}),
-		region: Joi.string().required().messages({
+		region: Joi.string().optional().allow("").messages({
 			"string.base": "地區必須是字串",
-			"string.empty": "地區不能為空",
-			"any.required": "地區是必填欄位",
 		}),
 		country: Joi.string().required().messages({
 			"string.base": "國家必須是字串",
@@ -812,10 +810,8 @@ exports.updateLocation = async (req, res, next) => {
 			"string.empty": "國家/地區不能為空",
 			"any.required": "國家/地區是必填欄位",
 		}),
-		region: Joi.string().optional().messages({
+		region: Joi.string().optional().allow("").messages({
 			"string.base": "地區必須是字串",
-			"string.empty": "地區不能為空",
-			"any.required": "地區是必填欄位",
 		}),
 		country: Joi.string().optional().messages({
 			"string.base": "國家必須是字串",
