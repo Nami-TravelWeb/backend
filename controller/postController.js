@@ -51,6 +51,41 @@ exports.getNavbarLocations = async (req, res, next) => {
 	}
 };
 
+exports.getlocations = async (req, res, next) => {
+	const schema = Joi.object({
+		continent: Joi.string().optional().messages({
+			"string.base": "國家/地區必須是字串",
+			"string.empty": "國家/地區不能為空",
+		}),
+		countryEn: Joi.string().optional().messages({
+			"string.base": "國家必須是字串",
+		}),
+	});
+
+	const { error, value } = schema.validate(req.query);
+	if (error) {
+		return res
+			.status(400)
+			.json({ message: "資料格式錯誤", error: error.details[0].message });
+	}
+	const { continent, countryEn } = value;
+	try {
+		const whereClause = {};
+		if (continent) {
+			whereClause.continent = continent;
+		}
+		if (countryEn) {
+			whereClause.countryEn = countryEn;
+		}
+		const locations = await Locations.findAll({
+			where: whereClause,
+		});
+		return res.status(200).json({ message: "success", locations });
+	} catch (err) {
+		next(err);
+	}
+};
+
 exports.getPosts = async (req, res, next) => {
 	const schema = Joi.object({
 		page: Joi.number().integer().default(1).messages({
@@ -73,9 +108,8 @@ exports.getPosts = async (req, res, next) => {
 			"string.base": "城市必須是字串",
 			"string.empty": "城市不能為空",
 		}),
-		search: Joi.string().optional().messages({
+		search: Joi.string().optional().allow("").messages({
 			"string.base": "搜尋必須是字串",
-			"string.empty": "搜尋不能為空",
 		}),
 	});
 	const { error, value } = schema.validate(req.query);
@@ -143,6 +177,7 @@ exports.getPosts = async (req, res, next) => {
 			attributes: [
 				"id",
 				"title",
+				"content",
 				"mainImageUrl",
 				"location",
 				"city",
@@ -184,6 +219,14 @@ exports.getPosts = async (req, res, next) => {
 			order: orderArray,
 			distinct: true,
 		});
+
+		for (const post of posts) {
+			post.content = post.content.replace(/<[^>]*>?/g, "");
+			post.content = post.content.replace(/\n/g, "");
+			post.content = post.content.replace(/&nbsp;/g, "");
+			post.content = post.content.substring(0, 65);
+			post.content += " ...";
+		}
 
 		return res.status(200).json({
 			message: "取得文章成功",
