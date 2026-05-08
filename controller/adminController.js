@@ -84,7 +84,7 @@ exports.getPreSignedUrl = async (req, res, next) => {
 	try {
 		const s3Params = {
 			Bucket: process.env.AWS_S3_BUCKET_NAME,
-			Key: `admin/${item}/${id}/${uuidv4()}`,
+			Key: `${process.env.AWS_S3_PREFIX}/${item}/${id}/${uuidv4()}`,
 			Expires: 3600, // URL expires in 1 hour
 			ContentType: mimeType,
 		};
